@@ -1,4 +1,5 @@
 #include "./zns.h"
+#include "./zns-ftl.c"
 
 #define MIN_DISCARD_GRANULARITY     (4 * KiB)
 #define NVME_DEFAULT_ZONE_SIZE      (128 * MiB)
@@ -828,6 +829,7 @@ static uint16_t zns_zone_mgmt_send(FemuCtrl *n, NvmeRequest *req)
         }
         *resets = 1;
         status = zns_do_zone_op(ns, zone, proc_mask, zns_reset_zone, req);
+        zns_ssd_reset_zone(n, req);
         (*resets)--;
         return NVME_SUCCESS;
     case NVME_ZONE_ACTION_OFFLINE:
@@ -1046,6 +1048,8 @@ static uint16_t zns_do_write(FemuCtrl *n, NvmeRequest *req, bool append,
     NvmeZonedResult *res = (NvmeZonedResult *)&req->cqe;
     uint16_t status;
 
+    req->is_write = true;
+
     if (!wrz) {
         status = nvme_check_mdts(n, data_size);
         if (status) {
@@ -1088,6 +1092,8 @@ static uint16_t zns_do_write(FemuCtrl *n, NvmeRequest *req, bool append,
     }
 
     zns_finalize_zoned_write(ns, req, false);
+    zns_ssd_write(n, req, slba, nlb);
+
     return NVME_SUCCESS;
 
 err:
@@ -1156,6 +1162,9 @@ static uint16_t zns_read(FemuCtrl *n, NvmeNamespace *ns, NvmeCmd *cmd,
     data_offset = zns_l2b(ns, slba);
 
     backend_rw(n->mbe, &req->qsg, &data_offset, req->is_write);
+
+    zns_ssd_read(n, req, slba, nlb);
+
     return NVME_SUCCESS;
 
 err:
@@ -1210,6 +1219,8 @@ static uint16_t zns_write(FemuCtrl *n, NvmeNamespace *ns, NvmeCmd *cmd,
 
     backend_rw(n->mbe, &req->qsg, &data_offset, req->is_write);
     zns_finalize_zoned_write(ns, req, false);
+
+    zns_ssd_write(n, req, slba, nlb);
 
     return NVME_SUCCESS;
 
@@ -1290,6 +1301,7 @@ static int zns_start_ctrl(FemuCtrl *n)
 static void zns_init(FemuCtrl *n, Error **errp)
 {
     NvmeNamespace *ns = &n->namespaces[0];
+    n->zns_ctrl = g_malloc0(sizeof(struct ZnsCtrl));
 
     zns_set_ctrl(n);
 
@@ -1300,6 +1312,9 @@ static void zns_init(FemuCtrl *n, Error **errp)
     }
 
     zns_init_zone_identify(n, ns, 0);
+    femu_debug("Starting FEMU in ZNS-SSD mode ...\n");
+
+    zns_ssd_init(n);
 }
 
 static void zns_exit(FemuCtrl *n)

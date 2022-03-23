@@ -1052,6 +1052,7 @@ typedef struct NvmeCQueue {
 
 typedef struct Oc12Bbt Oc12Bbt;
 typedef struct Oc12Ctrl Oc12Ctrl;
+typedef struct ZnsCtrl ZnsCtrl;
 
 typedef struct NvmeIdNsZoned NvmeIdNsZoned;
 typedef struct NvmeZone NvmeZone;
@@ -1174,6 +1175,7 @@ typedef struct FemuCtrl {
     NvmeBar         bar;
 
     /* Coperd: ZNS FIXME */
+    ZnsCtrl         *zns_ctrl;       
     QemuUUID        uuid;
     uint32_t        zasl_bs;
     uint8_t         zasl;
