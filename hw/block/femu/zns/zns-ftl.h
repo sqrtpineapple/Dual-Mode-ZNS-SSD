@@ -180,6 +180,6 @@ typedef struct ZnsCtrl {
 #endif
 
 /**
- * Authors: Bingjie Xu (xbj1997@foxmail.com)
+ * Author: Bingjie Xu (xbj1997@foxmail.com)
  * Date: 2021/11/30
  */
