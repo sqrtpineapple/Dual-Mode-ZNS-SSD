@@ -626,6 +626,6 @@ static void zns_ssd_reset_zone(FemuCtrl *n, NvmeRequest *req)
 }
 
 /**
- * Authors: Bingjie Xu (xbj1997@foxmail.com)
+ * Author: Bingjie Xu (xbj1997@foxmail.com)
  * Date: 2021/11/30
  */
